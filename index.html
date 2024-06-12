@@ -13,7 +13,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             background-color: #f0f0f0;
         }
 
@@ -23,7 +22,7 @@
         }
 
         form {
-            width: 95%;
+            width: 100%;
             max-width: 1200px;
             background-color: #fff;
             padding: 20px;
@@ -31,31 +30,31 @@
             border-radius: 8px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
+        .row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+        .row label {
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        th {
-            background-color: #f2f2f2;
-        }
-
-        input[type="text"], input[type="date"] {
+        .row input {
             width: 100%;
             padding: 8px;
             box-sizing: border-box;
+            margin-bottom: 5px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
         }
 
         button {
-            padding: 10px 15px;
-            margin-right: 10px;
+            padding: 10px;
             border: none;
             background-color: #4CAF50;
             color: white;
@@ -68,11 +67,6 @@
         }
 
         @media (max-width: 768px) {
-            th, td {
-                font-size: 12px;
-                padding: 6px;
-            }
-
             button {
                 padding: 8px 12px;
                 font-size: 14px;
@@ -84,9 +78,9 @@
                 padding: 10px;
             }
 
-            th, td {
-                font-size: 10px;
-                padding: 4px;
+            .row input {
+                font-size: 12px;
+                padding: 6px;
             }
 
             button {
@@ -103,28 +97,11 @@
 <body>
     <h1>Generador de Plantilla Excel</h1>
     <form id="dataForm">
-        <table>
-            <thead>
-                <tr>
-                    <th>Cuidad</th>
-                    <th>OT</th>
-                    <th>Fecha OT</th>
-                    <th>Tipo OT</th>
-                    <th>Diagnostico Canal de Ingreso</th>
-                    <th>Cod. Cliente</th>
-                    <th>Nombre de Cliente</th>
-                    <th>Dirección Cliente</th>
-                    <th>Modelo de Equipo</th>
-                    <th>Serie 1</th>
-                    <th>Fecha de Ingreso (Recuperado)</th>
-                    <th>Entrega Accesorio</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="dataRows"></tbody>
-        </table>
-        <button type="button" onclick="addRow()">Agregar Fila</button>
-        <button type="button" onclick="generateExcel()">Generar Excel</button>
+        <div id="dataRows"></div>
+        <div class="actions">
+            <button type="button" onclick="addRow()">Agregar Fila</button>
+            <button type="button" onclick="generateExcel()">Generar Excel</button>
+        </div>
     </form>
 
     <script>
@@ -133,28 +110,32 @@
         });
 
         function addRow(data = {}) {
-            const table = document.getElementById('dataRows');
-            const row = table.insertRow();
+            const container = document.getElementById('dataRows');
+            const row = document.createElement('div');
+            row.classList.add('row');
             const keys = ['Cuidad', 'OT', 'Fecha OT', 'Tipo OT', 'Diagnostico Canal de Ingreso', 'Cod. Cliente', 'Nombre de Cliente', 'Dirección Cliente', 'Modelo de Equipo', 'Serie 1', 'Fecha de Ingreso (Recuperado)', 'Entrega Accesorio'];
 
-            keys.forEach((key, i) => {
-                const cell = row.insertCell(i);
+            keys.forEach(key => {
+                const label = document.createElement('label');
+                label.textContent = key;
                 const input = document.createElement('input');
                 input.type = (key === 'Fecha OT' || key === 'Fecha de Ingreso (Recuperado)') ? 'date' : 'text';
+                input.name = key;
                 input.value = data[key] || '';
                 input.addEventListener('input', saveToLocalStorage);
-                cell.appendChild(input);
+                row.appendChild(label);
+                row.appendChild(input);
             });
 
-            const actionCell = row.insertCell(keys.length);
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Borrar';
             deleteButton.onclick = () => {
                 row.remove();
                 saveToLocalStorage();
             };
-            actionCell.appendChild(deleteButton);
+            row.appendChild(deleteButton);
 
+            container.appendChild(row);
             saveToLocalStorage();
         }
 
@@ -165,7 +146,7 @@
             const header = ['Cuidad', 'OT', 'Fecha OT', 'Tipo OT', 'Diagnostico Canal de Ingreso', 'Cod. Cliente', 'Nombre de Cliente', 'Dirección Cliente', 'Modelo de Equipo', 'Serie 1', 'Fecha de Ingreso (Recuperado)', 'Entrega Accesorio'];
             worksheet.addRow(header);
 
-            const rows = document.querySelectorAll('#dataRows tr');
+            const rows = document.querySelectorAll('#dataRows .row');
             rows.forEach(row => {
                 const rowData = [];
                 row.querySelectorAll('input').forEach(input => {
@@ -209,10 +190,10 @@
 
         function saveToLocalStorage() {
             const data = [];
-            const rows = document.querySelectorAll('#dataRows tr');
+            const rows = document.querySelectorAll('#dataRows .row');
             rows.forEach(row => {
                 const rowData = {};
-                row.querySelectorAll('input').forEach((input, i) => {
+                row.querySelectorAll('input').forEach(input => {
                     rowData[input.name] = input.value;
                 });
                 data.push(rowData);
