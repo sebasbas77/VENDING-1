@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Plantilla Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.2.1/exceljs.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        form {
+            width: 95%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 12px;
+                padding: 6px;
+            }
+
+            button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            form {
+                padding: 10px;
+            }
+
+            th, td {
+                font-size: 10px;
+                padding: 4px;
+            }
+
+            button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Plantilla Excel</h1>
+    <form id="dataForm">
+        <table>
+            <thead>
+                <tr>
+                    <th>Cuidad</th>
+                    <th>OT</th>
+                    <th>Fecha OT</th>
+                    <th>Tipo OT</th>
+                    <th>Diagnostico Canal de Ingreso</th>
+                    <th>Cod. Cliente</th>
+                    <th>Nombre de Cliente</th>
+                    <th>Dirección Cliente</th>
+                    <th>Modelo de Equipo</th>
+                    <th>Serie 1</th>
+                    <th>Fecha de Ingreso (Recuperado)</th>
+                    <th>Entrega Accesorio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="dataRows"></tbody>
+        </table>
+        <button type="button" onclick="addRow()">Agregar Fila</button>
+        <button type="button" onclick="generateExcel()">Generar Excel</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFromLocalStorage();
+        });
+
+        function addRow(data = {}) {
+            const table = document.getElementById('dataRows');
+            const row = table.insertRow();
+            const keys = ['Cuidad', 'OT', 'Fecha OT', 'Tipo OT', 'Diagnostico Canal de Ingreso', 'Cod. Cliente', 'Nombre de Cliente', 'Dirección Cliente', 'Modelo de Equipo', 'Serie 1', 'Fecha de Ingreso (Recuperado)', 'Entrega Accesorio'];
+
+            keys.forEach((key, i) => {
+                const cell = row.insertCell(i);
+                const input = document.createElement('input');
+                input.type = (key === 'Fecha OT' || key === 'Fecha de Ingreso (Recuperado)') ? 'date' : 'text';
+                input.value = data[key] || '';
+                input.addEventListener('input', saveToLocalStorage);
+                cell.appendChild(input);
+            });
+
+            const actionCell = row.insertCell(keys.length);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Borrar';
+            deleteButton.onclick = () => {
+                row.remove();
+                saveToLocalStorage();
+            };
+            actionCell.appendChild(deleteButton);
+
+            saveToLocalStorage();
+        }
+
+        function generateExcel() {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('ENTREGA DE EQUIPOS MIGRACIÓN');
+
+            const header = ['Cuidad', 'OT', 'Fecha OT', 'Tipo OT', 'Diagnostico Canal de Ingreso', 'Cod. Cliente', 'Nombre de Cliente', 'Dirección Cliente', 'Modelo de Equipo', 'Serie 1', 'Fecha de Ingreso (Recuperado)', 'Entrega Accesorio'];
+            worksheet.addRow(header);
+
+            const rows = document.querySelectorAll('#dataRows tr');
+            rows.forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('input').forEach(input => {
+                    rowData.push(input.value);
+                });
+                worksheet.addRow(rowData);
+            });
+
+            const headerRow = worksheet.getRow(1);
+            headerRow.height = 50;
+            headerRow.eachCell((cell, colNumber) => {
+                cell.font = { name: 'Calibri', size: 10, bold: true };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFF0000' }
+                };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+
+            worksheet.columns.forEach(column => {
+                column.width = 25;
+            });
+
+            workbook.xlsx.writeBuffer().then(buffer => {
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'PLANTILLA_GENERADA.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        function saveToLocalStorage() {
+            const data = [];
+            const rows = document.querySelectorAll('#dataRows tr');
+            rows.forEach(row => {
+                const rowData = {};
+                row.querySelectorAll('input').forEach((input, i) => {
+                    rowData[input.name] = input.value;
+                });
+                data.push(rowData);
+            });
+            localStorage.setItem('excelData', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('excelData')) || [];
+            data.forEach(rowData => addRow(rowData));
+        }
+    </script>
+</body>
+</html>
